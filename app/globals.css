@@ -1,0 +1,61 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-white text-black font-sans;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: black;
+  color: white;
+}
+
+.aurora {
+  background:
+    radial-gradient(900px 700px at 18% 28%, rgba(0, 0, 0, 0.06), transparent 60%),
+    radial-gradient(900px 700px at 82% 22%, rgba(0, 0, 0, 0.045), transparent 62%),
+    radial-gradient(950px 750px at 70% 82%, rgba(0, 0, 0, 0.035), transparent 62%),
+    radial-gradient(1000px 800px at 20% 86%, rgba(0, 0, 0, 0.03), transparent 65%);
+
+  filter: blur(34px);
+  opacity: 0.9;
+
+  transform: translate3d(calc((var(--mx, 0.5) - 0.5) * 24px),
+                        calc((var(--my, 0.5) - 0.5) * 18px),
+                        0)
+             scale(1.06);
+
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+
+.aurora::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 700px at 40% 55%, rgba(0, 0, 0, 0.03), transparent 62%),
+    radial-gradient(900px 700px at 60% 45%, rgba(0, 0, 0, 0.02), transparent 65%);
+  filter: blur(38px);
+  opacity: 0.8;
+  animation: auroraFloat 18s ease-in-out infinite alternate;
+  transform: translateZ(0);
+}
+
+@keyframes auroraFloat {
+  0%   { transform: translate3d(-1.2%, -0.8%, 0) scale(1.02); }
+  100% { transform: translate3d(1.0%,  1.1%, 0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora::after { animation: none !important; }
+  .aurora { transition: none !important; }
+}
