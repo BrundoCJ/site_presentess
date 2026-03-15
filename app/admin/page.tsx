@@ -14,21 +14,26 @@ type LogEntry = {
 type Stats = {
   total: number
   uniqueIPs: number
+  ipList: { ip: string; count: number }[]
   mostVisited: { path: string; count: number }[]
 }
 
 function computeStats(logs: LogEntry[]): Stats {
-  const ipSet = new Set(logs.map((l) => l.ip))
+  const ipCount: Record<string, number> = {}
   const pathCount: Record<string, number> = {}
   for (const log of logs) {
+    ipCount[log.ip] = (ipCount[log.ip] || 0) + 1
     pathCount[log.path] = (pathCount[log.path] || 0) + 1
   }
+  const ipList = Object.entries(ipCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([ip, count]) => ({ ip, count }))
   const mostVisited = Object.entries(pathCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([path, count]) => ({ path, count }))
 
-  return { total: logs.length, uniqueIPs: ipSet.size, mostVisited }
+  return { total: logs.length, uniqueIPs: ipList.length, ipList, mostVisited }
 }
 
 function formatDate(iso: string) {
@@ -169,27 +174,44 @@ export default function AdminPage() {
 
         {/* Stats */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <p className="text-zinc-400 text-xs mb-1">Total de visitas</p>
-              <p className="text-3xl font-bold">{stats.total}</p>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <p className="text-zinc-400 text-xs mb-1">Total de visitas</p>
+                <p className="text-3xl font-bold">{stats.total}</p>
+              </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <p className="text-zinc-400 text-xs mb-1">IPs únicos</p>
+                <p className="text-3xl font-bold">{stats.uniqueIPs}</p>
+              </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 col-span-2">
+                <p className="text-zinc-400 text-xs mb-2">Páginas mais visitadas</p>
+                <ul className="space-y-1">
+                  {stats.mostVisited.map(({ path, count }) => (
+                    <li key={path} className="flex justify-between text-sm">
+                      <span className="text-zinc-300 truncate">{path || '/'}</span>
+                      <span className="text-zinc-500 ml-2">{count}x</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-              <p className="text-zinc-400 text-xs mb-1">IPs únicos</p>
-              <p className="text-3xl font-bold">{stats.uniqueIPs}</p>
-            </div>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 col-span-2">
-              <p className="text-zinc-400 text-xs mb-2">Páginas mais visitadas</p>
-              <ul className="space-y-1">
-                {stats.mostVisited.map(({ path, count }) => (
-                  <li key={path} className="flex justify-between text-sm">
-                    <span className="text-zinc-300 truncate">{path || '/'}</span>
-                    <span className="text-zinc-500 ml-2">{count}x</span>
-                  </li>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-8">
+              <p className="text-zinc-400 text-xs mb-3">IPs que acessaram ({stats.uniqueIPs})</p>
+              <div className="flex flex-wrap gap-2">
+                {stats.ipList.map(({ ip, count }) => (
+                  <span
+                    key={ip}
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 text-xs font-mono text-zinc-300 flex items-center gap-2"
+                  >
+                    {ip}
+                    <span className="text-zinc-500">{count}x</span>
+                  </span>
                 ))}
-              </ul>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {cleared && (
