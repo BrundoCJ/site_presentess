@@ -62,20 +62,31 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [cleared, setCleared] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const [locked, setLocked] = useState(false)
 
   const fetchLogs = useCallback(async (pwd: string) => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/logs?password=${encodeURIComponent(pwd)}`)
+      const res = await fetch('/api/logs', {
+        headers: { 'Authorization': `Bearer ${pwd}` },
+      })
       if (res.ok) {
         const data = await res.json()
         setLogs(data.logs)
         setStats(computeStats(data.logs))
         setAuthenticated(true)
-        sessionStorage.setItem('admin_password', pwd)
+        setAttempts(0)
+        sessionStorage.setItem('admin_token', btoa(pwd))
+      } else if (res.status === 429) {
+        setLocked(true)
+        setError('Conta bloqueada por muitas tentativas. Tente em 15 minutos.')
       } else {
-        setError('Senha incorreta.')
+        const data = await res.json().catch(() => ({}))
+        const remaining = data.remaining ?? ''
+        setAttempts((prev) => prev + 1)
+        setError(`Senha incorreta.${remaining !== '' ? ` Tentativas restantes: ${remaining}` : ''}`)
       }
     } catch {
       setError('Erro ao conectar. Verifique as variáveis de ambiente.')
@@ -85,10 +96,15 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('admin_password')
+    const stored = sessionStorage.getItem('admin_token')
     if (stored) {
-      setSavedPassword(stored)
-      fetchLogs(stored)
+      try {
+        const pwd = atob(stored)
+        setSavedPassword(pwd)
+        fetchLogs(pwd)
+      } catch {
+        sessionStorage.removeItem('admin_token')
+      }
     }
   }, [fetchLogs])
 
@@ -100,14 +116,17 @@ export default function AdminPage() {
 
   const handleClear = async () => {
     if (!confirm('Apagar todos os logs?')) return
-    await fetch(`/api/logs?password=${encodeURIComponent(savedPassword)}`, { method: 'DELETE' })
+    await fetch('/api/logs', {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${savedPassword}` },
+    })
     setLogs([])
     setStats(computeStats([]))
     setCleared(true)
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('admin_password')
+    sessionStorage.removeItem('admin_token')
     setAuthenticated(false)
     setPassword('')
     setSavedPassword('')
@@ -130,11 +149,17 @@ export default function AdminPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="bg-zinc-800 text-white rounded-lg px-4 py-3 outline-none border border-zinc-700 focus:border-zinc-500 transition"
             autoFocus
+            disabled={locked}
           />
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          {attempts >= 3 && !locked && (
+            <p className="text-yellow-500 text-xs text-center">
+              Atenção: após 5 tentativas incorretas o acesso será bloqueado por 15 minutos.
+            </p>
+          )}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || locked}
             className="bg-white text-black rounded-lg px-4 py-3 font-semibold hover:bg-zinc-200 transition disabled:opacity-50"
           >
             {loading ? 'Entrando...' : 'Entrar'}
