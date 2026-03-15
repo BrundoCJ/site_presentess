@@ -6,7 +6,7 @@ import GiftCard from "./GiftCard";
 import Filters from "./Filters";
 
 export default function GiftGrid() {
-  const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [prefs, setPrefs] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 

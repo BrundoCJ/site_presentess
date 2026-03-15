@@ -16,8 +16,8 @@ const PREFS = [
 
 export default function Filters({ sort, setSort, prefs, setPrefs }: Props) {
   function togglePref(key: string) {
-    if (prefs.includes(key)) setPrefs(prefs.filter((p) => p !== key));
-    else setPrefs([...prefs, key]);
+    if (prefs.includes(key)) setPrefs([]);
+    else setPrefs([key]);
   }
 
   return (
